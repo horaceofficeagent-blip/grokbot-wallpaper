@@ -275,7 +275,7 @@
 }
 .bhq-ftext { flex: 1; min-width: 0; }
 .bhq-fname { display: block; font: 900 14px/1.2 var(--bhq-round); letter-spacing: -.005em; color: var(--hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bhq-fhint { display: block; margin-top: 2px; font: 700 11px/1 var(--bhq-round); letter-spacing: .02em; color: var(--f-accent, #A97A33); opacity: .9; }
+.bhq-fhint { display: block; margin-top: 2px; font: 800 12px/1.25 var(--bhq-round); letter-spacing: .02em; color: #F3E6C0; opacity: 1; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
 .bhq-fdots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
 .bhq-fdots .bhq-dot { width: 5px; height: 5px; box-shadow: none; }
 .bhq-fcount { flex: none; font: 900 13px/1 var(--bhq-round); color: var(--mid); transition: color .3s; }
