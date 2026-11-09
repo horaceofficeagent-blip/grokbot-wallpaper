@@ -275,6 +275,7 @@
 }
 .bhq-ftext { flex: 1; min-width: 0; }
 .bhq-fname { display: block; font: 900 14px/1.2 var(--bhq-round); letter-spacing: -.005em; color: var(--hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bhq-fhint { display: block; margin-top: 2px; font: 700 11px/1 var(--bhq-round); letter-spacing: .02em; color: var(--f-accent, #A97A33); opacity: .9; }
 .bhq-fdots { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
 .bhq-fdots .bhq-dot { width: 5px; height: 5px; box-shadow: none; }
 .bhq-fcount { flex: none; font: 900 13px/1 var(--bhq-round); color: var(--mid); transition: color .3s; }
@@ -663,7 +664,7 @@ html.bhq-phone body { overscroll-behavior: none; -webkit-tap-highlight-color: tr
   background: none; box-shadow: none; animation: none;
 }
 .bhq-phone #floors::before, .bhq-phone #floors::after { display: none; }
-.bhq-phone .bhq-fhead, .bhq-phone .bhq-car, .bhq-phone .bhq-fdots { display: none; }
+.bhq-phone .bhq-fhead, .bhq-phone .bhq-car, .bhq-phone .bhq-fdots, .bhq-phone .bhq-fhint { display: none; }
 .bhq-phone .bhq-fscroll {
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain;
   padding: 2px calc(12px + var(--bhq-sr)) 10px calc(12px + var(--bhq-sl)); scroll-padding-inline: 12px;

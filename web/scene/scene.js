@@ -13,6 +13,7 @@ import { Actor } from './actor.js';
 import { generateBlob } from './blobgen.js';
 import { Spring, clamp } from './spring.js';
 import { sofiaHour, fontsPromise } from './walls.js';
+import { matchDept } from './floorstyle.js';
 
 // Relative to the page (not the site root), so the office also works when it is published in a sub-folder, e.g.
 // https://bodila51.github.io/grokbot-wallpaper/office/ -> ../assets. Locally the page is at `/`, where this is /assets.
@@ -191,7 +192,7 @@ function sync() {
   }
   building.setScreens(flags);
   const floor = floors.find((f) => f.id === building.activeId);
-  building.setDisplayData({ floorName: floor ? floor.name : '', bots: floorBots, hour: sofiaHour(state.now) });
+  building.setDisplayData({ floorName: floor ? floor.name : '', dept: floor ? matchDept(floor) : null, bots: floorBots, hour: sofiaHour(state.now) });
   if (hoveredId && !actors.has(hoveredId)) hoveredId = null;
   if (!settledOnce) {
     settledOnce = true;

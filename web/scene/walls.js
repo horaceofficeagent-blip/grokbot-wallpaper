@@ -7,6 +7,51 @@ const STATUS = { working: '#34C759', waiting_user: '#FF9F0A', error: '#FF3B30', 
 const RANK = { waiting_user: 0, error: 0, stuck: 0, working: 1, done: 2, idle: 3 };
 const TSK_ID = /^tsk-\d+$/i;
 
+// AD-Linkage HQ: department-flavoured wall copy when the live floor is a known team.
+const DEPT_WALL = {
+  marketing: {
+    title: 'Marketing bay',
+    subtitle: 'Campaigns · creatives · ads',
+    samples: ['Campaign draft — Q4 launch', 'IG carousel retouch', 'Meta ads A/B copy', 'Brand moodboard v2'],
+  },
+  video: {
+    title: 'Video studio',
+    subtitle: 'Shoots · edits · delivery',
+    samples: ['Cut v3 — hero reel', 'AI storyboard pass', 'Color grade review', 'VO take 2'],
+  },
+  product: {
+    title: 'Product lab',
+    subtitle: 'Specs · builds · ship',
+    samples: ['Token platform spec', 'Kanban: P0 bugs', 'Dual-monitor QA', 'Release notes draft'],
+  },
+  courses: {
+    title: 'Courses hall',
+    subtitle: 'Curriculum · lectures · packs',
+    samples: ['Lecture deck polish', 'Course binder set', 'Partner syllabus', 'Flipchart outline'],
+  },
+  students: {
+    title: 'Students lounge',
+    subtitle: 'Community · loyalty · care',
+    samples: ['Loyalty check-in', 'Community post', 'Onboarding welcome', 'Office hours roster'],
+  },
+  finance: {
+    title: 'Finance desk',
+    subtitle: 'Invoices · contracts · risk',
+    samples: ['Invoice Q4 batch', 'Contract review', 'Budget vs actual', 'Risk checklist'],
+  },
+  ops: {
+    title: 'Ops bridge',
+    subtitle: 'Status · staffing · systems',
+    samples: ['Status board sync', 'HR roster update', 'Server health strip', 'Clipboard handoff'],
+  },
+};
+
+function deptOf(d) {
+  const key = `${d?.dept || ''} ${d?.floorName || ''}`.toLowerCase();
+  for (const id of Object.keys(DEPT_WALL)) if (key.includes(id)) return id;
+  return d?.dept && DEPT_WALL[d.dept] ? d.dept : null;
+}
+
 let fontsReady = false;
 const fontsPromise = (async () => {
   try {
@@ -123,7 +168,7 @@ export class WallDisplays {
   }
 
   signature(d) {
-    const parts = [d.floorName, d.hour, d.now];
+    const parts = [d.floorName, d.dept, d.hour, d.now];
     for (const b of d.bots) parts.push(b.id, b.effective_status || b.status, taskTitle(b), b.color, b.today?.events, b.today?.tasks_done, b.today?.working_min, (b.today?.hourly || []).join(','));
     return parts.join('|');
   }
@@ -167,13 +212,20 @@ export class WallDisplays {
     const hourly = new Array(24).fill(0);
     for (const b of bots) for (let i = 0; i < 24; i++) hourly[i] += Number(b.today?.hourly?.[i]) || 0;
 
+    const deptId = deptOf(d);
+    const wall = deptId ? DEPT_WALL[deptId] : null;
     g.textBaseline = 'alphabetic';
     g.fillStyle = '#8E8E93'; g.font = `500 32px ${FONT}`;
     let nx;
-    if (this.accent) nx = this.accentDot(g, 'Today', 44, 62, 51, 20);
-    else { g.fillText('Today · ', 44, 62); nx = 44 + g.measureText('Today · ').width; }
+    const lead = wall ? wall.title : 'Today';
+    if (this.accent) nx = this.accentDot(g, lead, 44, 62, 51, 20);
+    else { g.fillText(lead + ' · ', 44, 62); nx = 44 + g.measureText(lead + ' · ').width; }
     g.fillStyle = '#F5F5F7'; g.font = `650 40px ${FONT}`;
     g.fillText(ellipsize(g, d.floorName || '', 744 - nx), nx, 62);
+    if (wall) {
+      g.fillStyle = '#8E8E93'; g.font = `500 18px ${FONT}`;
+      g.fillText(wall.subtitle, 44, 88);
+    }
     // live dot
     g.fillStyle = '#34C759'; g.beginPath(); g.arc(W - 52, 50, 7, 0, 7); g.fill();
     g.fillStyle = 'rgba(52,199,89,0.25)'; g.beginPath(); g.arc(W - 52, 50, 14, 0, 7); g.fill();
@@ -184,7 +236,7 @@ export class WallDisplays {
       [String(done), 'tasks done'],
       [hours.toFixed(1), 'hours worked'],
     ];
-    const tw = 205, gap = 14, x0 = 44, y0 = 100;
+    const tw = 205, gap = 14, x0 = 44, y0 = wall ? 112 : 100;
     tiles.forEach(([val, label], i) => {
       const x = x0 + i * (tw + gap);
       g.fillStyle = 'rgba(255,255,255,0.065)'; roundRect(g, x, y0, tw, 108, 18); g.fill();
@@ -195,7 +247,7 @@ export class WallDisplays {
     });
 
     // 24-bar hourly chart, current hour highlighted
-    const cx = 44, cw = W - 88, cy = 250, ch = 220;
+    const cx = 44, cw = W - 88, cy = wall ? 262 : 250, ch = 210;
     g.fillStyle = '#8E8E93'; g.font = `500 17px ${FONT}`;
     g.fillText('Events by hour', cx, cy - 4);
     const max = Math.max(1, ...hourly);
@@ -228,15 +280,26 @@ export class WallDisplays {
     g.fillStyle = '#FAF9F6'; g.fillRect(0, 0, W, 68);
     g.fillStyle = '#E3E0D9'; g.fillRect(0, 68, W, 2);
 
+    const deptId = deptOf(d);
+    const wall = deptId ? DEPT_WALL[deptId] : null;
     g.fillStyle = '#1D1D1F'; g.font = `700 34px ${FONT}`;
     let nx;
-    if (this.accent) nx = this.accentDot(g, 'Tasks', 36, 49, 37, 20);
-    else { g.fillText('Tasks', 36, 49); nx = 36 + g.measureText('Tasks ').width; }
+    const boardLead = wall ? wall.title : 'Tasks';
+    if (this.accent) nx = this.accentDot(g, boardLead, 36, 49, 37, 20);
+    else { g.fillText(boardLead, 36, 49); nx = 36 + g.measureText(boardLead + ' ').width; }
     g.fillStyle = '#6E6E73'; g.font = `600 26px ${FONT}`;
     g.fillText(`${this.accent ? '' : '· '}${ellipsize(g, d.floorName || '', 420)}`, nx, 49);
 
     const sorted = [...d.bots].sort((a, b) => (RANK[a.effective_status || a.status] ?? 3) - (RANK[b.effective_status || b.status] ?? 3) || String(a.name).localeCompare(String(b.name)));
-    const shown = sorted.slice(0, 8), extra = sorted.length - shown.length;
+    // Pad with department sample tasks so an empty/quiet floor still reads as that work type.
+    const shown = sorted.slice(0, 8);
+    if (wall && shown.length < 4) {
+      for (const sample of wall.samples) {
+        if (shown.length >= 4) break;
+        shown.push({ id: `sample-${shown.length}`, name: wall.title, task: sample, status: 'idle', color: this.accent || '#1B5E4A' });
+      }
+    }
+    const extra = sorted.length - Math.min(sorted.length, 8);
     if (extra > 0) {
       g.textAlign = 'right'; g.fillStyle = '#515154'; g.font = `700 28px ${FONT}`;
       g.fillText(`+${extra}`, W - 36, 49);

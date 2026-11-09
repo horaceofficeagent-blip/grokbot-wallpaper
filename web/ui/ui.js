@@ -32,20 +32,21 @@ const MARK_SRC = new URL('../../assets/brand/logo-mark.png', import.meta.url).hr
 const LOGO_SRC = new URL('../../assets/brand/logo.png', import.meta.url).href;
 
 // AD-Linkage HQ department accents (keep in sync with web/scene/floorstyle.js DEPT_STYLE)
-const DEPT_ACCENT = {
-  marketing: '#1B5E4A',
-  video: '#123F36',
-  product: '#2A6B5E',
-  courses: '#C9A227',
-  students: '#3D6B5E',
-  finance: '#A97A33',
-  ops: '#1A2E28',
+const DEPT_META = {
+  marketing: { accent: '#1B5E4A', hint: '媒體角' },
+  video:     { accent: '#123F36', hint: '拍攝角' },
+  product:   { accent: '#2A6B5E', hint: '產品角' },
+  courses:   { accent: '#C9A227', hint: '教室' },
+  students:  { accent: '#3D6B5E', hint: '休息角' },
+  finance:   { accent: '#A97A33', hint: '檔案角' },
+  ops:       { accent: '#1A2E28', hint: '營運角' },
 };
-function deptAccent(fl) {
+function deptMeta(fl) {
   const key = `${fl?.name || ''} ${fl?.id || ''}`.toLowerCase();
-  for (const name of Object.keys(DEPT_ACCENT)) if (key.includes(name)) return DEPT_ACCENT[name];
+  for (const name of Object.keys(DEPT_META)) if (key.includes(name)) return { id: name, ...DEPT_META[name] };
   return null;
 }
+function deptAccent(fl) { return deptMeta(fl)?.accent || null; }
 const FEED_ROWS = 4;
 const STEPS_SHOWN = 3;
 const FEED_OUT_MS = 420;
@@ -563,12 +564,13 @@ function makeFloor(id) {
   const num = h('span', { class: 'bhq-num bhq-fnum' });
   const chip = h('i', { class: 'bhq-fchip', 'aria-hidden': 'true' });
   const name = h('b', { class: 'bhq-fname' });
+  const hint = h('span', { class: 'bhq-fhint' });
   const dots = h('span', { class: 'bhq-fdots', 'aria-hidden': 'true' });
   const count = h('span', { class: 'bhq-num bhq-fcount' });
   const btn = h('button', { class: 'bhq-floor', type: 'button', 'data-id': id },
-    num, chip, h('span', { class: 'bhq-ftext' }, name, dots), count);
+    num, chip, h('span', { class: 'bhq-ftext' }, name, hint, dots), count);
   btn.addEventListener('click', () => { if (U.h.onSelectFloor) U.h.onSelectFloor(id); });
-  return { btn, num, chip, name, dots, count, dotEls: [] };
+  return { btn, num, chip, name, hint, dots, count, dotEls: [] };
 }
 
 /* ------------------------------------------------------------------ build: panel (floor team / bot card) */
@@ -1289,14 +1291,18 @@ function renderFloors(state, o) {
     setText(r.num, number);
     setText(r.name, fl.name || fl.id);
     setText(r.count, ids.length);
-    const accent = deptAccent(fl);
-    if (accent) {
-      r.chip.style.background = accent;
+    const meta = deptMeta(fl);
+    if (meta) {
+      r.chip.style.background = meta.accent;
       r.chip.hidden = false;
-      r.btn.style.setProperty('--f-accent', accent);
+      r.btn.style.setProperty('--f-accent', meta.accent);
+      setText(r.hint, meta.hint);
+      r.hint.hidden = false;
     } else {
       r.chip.hidden = true;
       r.btn.style.removeProperty('--f-accent');
+      setText(r.hint, '');
+      r.hint.hidden = true;
     }
 
     // one tiny lit dot per bot, in desk order
