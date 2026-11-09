@@ -1,15 +1,22 @@
-// Sound for the dashboard: a calm music loop (music-loop.m4a) and small effects made on the fly with Web Audio.
+// Sound for the dashboard: original synthesised music loops + small effects made on the fly with Web Audio.
 // Browsers allow sound only after a click or a key press, so nothing plays before the first one. The speaker button
-// in the top bar switches the music and the effects separately; the choice is kept in localStorage. Everything fades
-// out while the tab is hidden. The loop file is one 16-bar cycle plus 2 s that equal its own start, so each copy
-// crossfades into the next without a seam (the music is made by assets/_src/audio/make_loop.py).
-// Every effect is in the music's key (C major pentatonic), so they sit inside it instead of on top of it.
+// in the top bar switches the music and the effects separately and lets you pick a track; the choice is kept in
+// localStorage. Everything fades out while the tab is hidden. Each loop file is one cycle plus 2 s that equal its own
+// start, so each copy crossfades into the next without a seam (generators in assets/_src/audio/).
+// Every effect is in C major pentatonic, so they sit inside the tracks instead of on top of them.
+// Tracks are original — no copyrighted K-pop (or other) recordings are used.
 
 const PREFS_KEY = 'bothq.sound';
-const LOOP_URL = new URL('./music-loop.m4a', import.meta.url).href;
-const CYCLE = (16 * 4 * 60) / 84;          // the loop's period, s
 const OVERLAP = 2;                          // s of the file past the period, crossfaded into the next copy
 const MUSIC_GAIN = 0.4, FX_GAIN = 0.75, OUT_GAIN = 0.9;
+
+/** Original loops only. Labels Traditional Chinese for the picker. */
+const TRACKS = [
+  { id: 'calm', label: '輕柔', url: new URL('./music-loop.m4a', import.meta.url).href, cycle: (16 * 4 * 60) / 84 },
+  { id: 'upbeat', label: '活力 K-pop 風', url: new URL('./music-upbeat.m4a', import.meta.url).href, cycle: (16 * 4 * 60) / 120 },
+  { id: 'chill', label: '放鬆', url: new URL('./music-chill.m4a', import.meta.url).href, cycle: (16 * 4 * 60) / 90 },
+];
+const TRACK_BY_ID = Object.fromEntries(TRACKS.map((t) => [t.id, t]));
 const PENTA = [72, 74, 76, 79, 81, 84];     // C5 D5 E5 G5 A5 C6: each bot hops on its own note
 const FLOOR_NOTES = [76, 79, 81, 84, 86, 88, 91, 93];
 
@@ -19,16 +26,21 @@ const ICON_OFF = '<svg class="bhq-snd-off" viewBox="0 0 20 20" width="20" height
 let prefs = readPrefs();
 let ctx = null, out = null, musicBus = null, fxBus = null, verbIn = null, noise = null;
 let enabled = false, unlocked = false, ui = null;
-const music = { buf: null, loading: null, next: 0, first: true, timer: 0, playing: false, srcs: new Set() };
+const music = { buf: null, track: null, cache: new Map(), loading: null, next: 0, first: true, timer: 0, playing: false, srcs: new Set() };
+const activeTrack = () => TRACK_BY_ID[prefs.track] || TRACKS[0];
 const last = new Map();
 
 /** for checks from the console: import('./audio/sound.js').then((m) => m.soundState()) */
 export function soundState() {
-  return { ctx: ctx?.state ?? 'none', unlocked, prefs: { ...prefs }, music: music.playing, loaded: !!music.buf, copies: music.srcs.size };
+  return { ctx: ctx?.state ?? 'none', unlocked, prefs: { ...prefs }, track: prefs.track, music: music.playing, loaded: !!music.buf, copies: music.srcs.size };
 }
 
 function readPrefs() {
-  try { return { music: true, fx: true, ...JSON.parse(localStorage.getItem(PREFS_KEY)) }; } catch { return { music: true, fx: true }; }
+  try {
+    const p = { music: true, fx: true, track: 'calm', ...JSON.parse(localStorage.getItem(PREFS_KEY)) };
+    if (!TRACK_BY_ID[p.track]) p.track = 'calm';
+    return p;
+  } catch { return { music: true, fx: true, track: 'calm' }; }
 }
 function savePrefs() { try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch { /* private mode */ } }
 
@@ -132,12 +144,23 @@ function impulse(len, rt60) {
 
 // ---------------------------------------------------------------- music
 
+async function loadTrack(id) {
+  const tr = TRACK_BY_ID[id] || TRACKS[0];
+  if (music.cache.has(tr.id)) return music.cache.get(tr.id);
+  const buf = await fetch(tr.url).then((r) => r.arrayBuffer())
+    .then((b) => new Promise((res, rej) => ctx.decodeAudioData(b.slice(0), res, rej)));
+  music.cache.set(tr.id, buf);
+  return buf;
+}
+
 async function startMusic() {
   if (!ctx || music.playing) return;
   music.playing = true;
+  const tr = activeTrack();
   try {
-    music.buf ||= await (music.loading ||= fetch(LOOP_URL).then((r) => r.arrayBuffer())
-      .then((b) => new Promise((res, rej) => ctx.decodeAudioData(b, res, rej))));
+    music.loading = loadTrack(tr.id);
+    music.buf = await music.loading;
+    music.track = tr.id;
   } catch {
     music.playing = false;
     music.loading = null;
@@ -147,7 +170,7 @@ async function startMusic() {
   const now = ctx.currentTime;
   musicBus.gain.cancelScheduledValues(now);
   musicBus.gain.setValueAtTime(musicBus.gain.value, now);
-  musicBus.gain.linearRampToValueAtTime(MUSIC_GAIN, now + 3);
+  musicBus.gain.linearRampToValueAtTime(MUSIC_GAIN, now + 1.2);
   music.next = now + 0.05;
   music.first = true;
   pump();
@@ -156,34 +179,53 @@ async function startMusic() {
 }
 
 function pump() {
-  while (music.playing && music.next < ctx.currentTime + 3) {
+  const cycle = activeTrack().cycle;
+  while (music.playing && music.buf && music.next < ctx.currentTime + 3) {
     const at = music.next, s = ctx.createBufferSource(), g = ctx.createGain();
     s.buffer = music.buf;
     if (music.first) g.gain.setValueAtTime(1, at);
     else { g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(1, at + OVERLAP); }
-    g.gain.setValueAtTime(1, at + CYCLE);
-    g.gain.linearRampToValueAtTime(0, at + CYCLE + OVERLAP);
+    g.gain.setValueAtTime(1, at + cycle);
+    g.gain.linearRampToValueAtTime(0, at + cycle + OVERLAP);
     s.connect(g);
     g.connect(musicBus);
     s.start(at);
-    s.stop(at + CYCLE + OVERLAP);
+    s.stop(at + cycle + OVERLAP);
     music.srcs.add(s);
     s.onended = () => music.srcs.delete(s);
     music.first = false;
-    music.next += CYCLE;
+    music.next += cycle;
   }
 }
 
-function stopMusic() {
+function stopMusic({ fade = 0.8 } = {}) {
   music.playing = false;
   clearInterval(music.timer);
   if (!ctx) return;
   const now = ctx.currentTime;
   musicBus.gain.cancelScheduledValues(now);
   musicBus.gain.setValueAtTime(musicBus.gain.value, now);
-  musicBus.gain.linearRampToValueAtTime(0, now + 0.8);
-  for (const s of music.srcs) { try { s.stop(now + 0.9); } catch { /* already stopped */ } }
+  musicBus.gain.linearRampToValueAtTime(0, now + fade);
+  for (const s of music.srcs) { try { s.stop(now + fade + 0.1); } catch { /* already stopped */ } }
   music.srcs.clear();
+}
+
+/** Switch loop: short fade out, load if needed, fade back in with the overlap pump. */
+async function setTrack(id) {
+  if (!TRACK_BY_ID[id] || id === prefs.track) return;
+  prefs.track = id;
+  savePrefs();
+  paint();
+  if (!ctx || !prefs.music) return;
+  const was = music.playing;
+  if (was) stopMusic({ fade: 0.35 });
+  music.buf = null;
+  music.track = null;
+  if (was || unlocked) {
+    // small gap so the old sources release before the new pump
+    await new Promise((r) => setTimeout(r, 380));
+    if (prefs.music && prefs.track === id) startMusic();
+  }
 }
 
 // ---------------------------------------------------------------- effects
@@ -440,6 +482,22 @@ function buildButton(slot) {
     rows[key] = row;
     pop.append(row);
   }
+  const trackLab = document.createElement('div');
+  trackLab.className = 'bhq-snd-lab';
+  trackLab.textContent = '曲目';
+  pop.append(trackLab);
+  const trackRows = {};
+  for (const tr of TRACKS) {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'bhq-snd-track';
+    row.setAttribute('role', 'radio');
+    row.dataset.track = tr.id;
+    row.innerHTML = `<span>${tr.label}</span><i class="bhq-snd-dot" aria-hidden="true"></i>`;
+    row.addEventListener('click', () => setTrack(tr.id));
+    trackRows[tr.id] = row;
+    pop.append(row);
+  }
   slot.prepend(btn);
   document.body.append(pop);
 
@@ -457,7 +515,7 @@ function buildButton(slot) {
   document.addEventListener('pointerdown', (e) => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) show(false); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pop.hidden) show(false); });
   addEventListener('resize', () => { if (!pop.hidden) place(); });
-  ui = { btn, rows };
+  ui = { btn, rows, trackRows };
   paint();
 }
 
@@ -465,6 +523,13 @@ function paint() {
   if (!ui) return;
   ui.btn.classList.toggle('is-off', !prefs.music && !prefs.fx);
   for (const k of ['music', 'fx']) ui.rows[k].setAttribute('aria-checked', prefs[k] ? 'true' : 'false');
+  for (const tr of TRACKS) {
+    const row = ui.trackRows[tr.id];
+    if (!row) continue;
+    const on = prefs.track === tr.id;
+    row.setAttribute('aria-checked', on ? 'true' : 'false');
+    row.classList.toggle('is-on', on);
+  }
 }
 
 function set(key, on) {

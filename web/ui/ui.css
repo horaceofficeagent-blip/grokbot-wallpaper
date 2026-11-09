@@ -229,7 +229,22 @@
 }
 .bhq-snd-row[aria-checked="true"] .bhq-snd-sw { background: #34C759; }
 .bhq-snd-row[aria-checked="true"] .bhq-snd-sw::after { translate: 14px 0; }
+.bhq-snd-lab {
+  margin: 6px 12px 2px; color: var(--mid); font: 800 11px/1 var(--bhq-round); letter-spacing: .06em;
+}
+.bhq-snd-pop .bhq-snd-track {
+  appearance: none; border: 0; margin: 0; background: none; cursor: pointer; width: 100%; height: 36px;
+  padding: 0 10px 0 12px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;
+  color: var(--mid); font: 800 13px/1 var(--bhq-round); transition: background-color .15s, color .15s;
+}
+.bhq-snd-pop .bhq-snd-track:hover { background: rgba(255, 255, 255, .08); color: var(--hi); }
+.bhq-snd-pop .bhq-snd-track.is-on { color: var(--hi); background: rgba(27, 94, 74, .28); }
+.bhq-snd-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.28);
+}
+.bhq-snd-track.is-on .bhq-snd-dot { background: #C9A227; box-shadow: none; }
 .bhq-phone .bhq-snd { width: 42px; height: 42px; border-radius: 21px; }
+.bhq-phone .bhq-snd-pop { width: min(196px, calc(100vw - 24px)); }
 
 /* the share button (share/share.js opens its card under it) */
 .bhq-share {
