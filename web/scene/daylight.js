@@ -27,7 +27,7 @@ const DAY = P({
   sunI: 2.4, sunC: rgb('#FFF1DE'),
   hemiI: 1.05, hemiSky: rgb('#F3F2F0'), hemiGnd: rgb('#CFC8BE'),
   fillI: 0.35, fillC: rgb('#E6EEFF'), envI: 0.5, exposure: 1.05,
-  shadow: 0.34, tint: [1.42, 1.43, 1.46], floorSun: 0.72, floorSunC: rgb('#FFF6EC'),
+  shadow: 0.34, tint: [1.36, 1.44, 1.40], floorSun: 0.72, floorSunC: rgb('#F6F2E8'),  // AD-Linkage ivory floor sun
   glassC: rgb('#D2E4F2'), glassA: 0.22, glassE: 0.12,
 });
 const MORNING = P({                                       // fresh: near-white floor, cool shade, pale sky in the glass

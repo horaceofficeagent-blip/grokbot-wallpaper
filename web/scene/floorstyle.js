@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // Wool-and-ceramic colours (sRGB): sage, eucalyptus, slate, lilac, mauve, clay, ochre.
-export const ACCENTS = ['#9CAA93', '#86A4A1', '#8E9DB1', '#A49EB9', '#BB9CA6', '#C79F89', '#CDB27F'];
+export const ACCENTS = ['#3D6B5E', '#A97A33', '#6B8F7A', '#C4A574', '#5A7A72', '#8B7355', '#9CAA93']; // AD-Linkage green/gold family
 export const LAYOUTS = ['sofa', 'media', 'library', 'meeting'];
 
 const SUN = [0.85, 1.25];                 // floor offset of a shadow per metre of height, read off the baked floor
