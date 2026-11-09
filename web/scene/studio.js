@@ -1,4 +1,4 @@
-// The studio look: a clean white product-shot backdrop and a soft, dark, premium aura around and under the building.
+// The studio look: a dark charcoal AD-Linkage HQ backdrop with a soft gold-tinted premium aura around the building.
 //
 // How it is made (no sprites, no CSS glow, nothing drawn by hand):
 //  1. The building is drawn once more as a flat white silhouette into a small target (every material replaced, so
@@ -8,21 +8,22 @@
 //     each pushed a little downwards because the light comes from above, like a lit object on a paper sweep.
 //  3. One final pass puts the building over the backdrop: a quiet radial fall-off from white to cool grey, the three
 //     shadow layers multiplied in (not added), and dithering, so the long gradients never band.
-// The aura only exists outside the silhouette, so clear glass keeps showing the white backdrop through it.
+// The aura only exists outside the silhouette, so clear glass keeps showing the dark backdrop through it.
 import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 
 // All distances are CSS px at a 1080 px tall frame; they scale with the frame height and with the camera zoom
 // (the aura belongs to the building, so it grows and shrinks with it).
 export const STUDIO = {
-  centre: [0.5, 0.45],                                    // where the light pools (fraction of the frame, y down)
-  radii: [0.82, 0.78],                                    // ellipse the fall-off reaches its edge colour at
-  stops: [[0, '#FFFEF9'], [0.5, '#F6F2E8'], [1, '#E4E0D4']],  // AD-Linkage ivory studio
-  shadow: '#0B0C11',                                      // cool near-black, never pure black
+  centre: [0.5, 0.42],                                    // where the light pools (fraction of the frame, y down)
+  radii: [0.78, 0.72],                                    // ellipse the fall-off reaches its edge colour at
+  // AD-Linkage HQ: black / gold / green — near-black studio, gold-tinted soft aura (never a white product shot)
+  stops: [[0, '#1A1C18'], [0.45, '#0E100E'], [1, '#050605']],
+  shadow: '#C9A227',                                      // gold-tinted aura edge (reads warm against charcoal)
   layers: [                                               // sigma (px), push down (px), strength at the silhouette edge
-    { sigma: 4, down: 2, w: 0.40 },                       // contact: a thin dark seam that grounds the edge
-    { sigma: 30, down: 22, w: 0.40 },                     // penumbra: the body of the aura
-    { sigma: 120, down: 70, w: 0.34 },                    // ambient: the long, quiet tail
+    { sigma: 4, down: 2, w: 0.28 },                       // contact: a thin dark seam that grounds the edge
+    { sigma: 34, down: 24, w: 0.22 },                     // penumbra: soft gold body
+    { sigma: 130, down: 78, w: 0.16 },                    // ambient: long quiet gold tail
   ],
 };
 
@@ -71,7 +72,7 @@ const COMPOSE_FS = /* glsl */`
   void main() {
     vec4 c = texture2D( tDiffuse, vUv );
 
-    // backdrop: pool of light in the middle, cool grey toward the corners (piecewise linear = the CSS gradient)
+    // backdrop: dim pool in the middle, near-black toward the corners (piecewise linear = the CSS gradient)
     float d = length( ( vUv - vec2( centre.x, 1.0 - centre.y ) ) / radii );
     vec3 bg = d < stopMid ? mix( stop0, stop1, d / stopMid ) : mix( stop1, stop2, clamp( ( d - stopMid ) / ( 1.0 - stopMid ), 0.0, 1.0 ) );
 

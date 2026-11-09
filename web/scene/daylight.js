@@ -7,7 +7,7 @@
 //
 // One shadow map from the sun shades everything: the lit furniture and the bots (three's own shadows) and the unlit
 // baked floor and wall, which sunpatch.js relights from the same map. The room is open on top, like the picture: the
-// sun reaches the whole floor, the window frame casts the stripes. The studio backdrop (studio.js) stays white.
+// sun reaches the whole floor, the window frame casts the stripes. The studio backdrop (studio.js) stays dark.
 // Publishes <html data-daylight="dawn|day|golden|dusk|night"> and --night (0..1), at most once a second.
 //
 // Tests: ?time=18:50 or window.bothq.setTime('18:50') hold that time on a fixed reference day (latitude 42.7°, sun
@@ -23,20 +23,21 @@ const rgb = (hex) => { const c = new THREE.Color(hex); c.convertLinearToSRGB(); 
 // floorSun / floorSunC: the sun on the baked floor (1 = as bright as the bake's own sunlit floor); glass: the curtain wall.
 const P = (o) => o;
 const DAY = P({
-  night: 0, bake: 0, lamps: 0, windows: 0,
-  sunI: 2.4, sunC: rgb('#FFF1DE'),
-  hemiI: 1.05, hemiSky: rgb('#F3F2F0'), hemiGnd: rgb('#CFC8BE'),
-  fillI: 0.35, fillC: rgb('#E6EEFF'), envI: 0.5, exposure: 1.05,
-  shadow: 0.34, tint: [1.36, 1.44, 1.40], floorSun: 0.72, floorSunC: rgb('#F6F2E8'),  // AD-Linkage ivory floor sun
-  glassC: rgb('#D2E4F2'), glassA: 0.22, glassE: 0.12,
+  // AD-Linkage HQ: night-leaning graphite room, warm gold sun, green-cool shade (not ivory white loft)
+  night: 0, bake: 0, lamps: 0.08, windows: 0.05,
+  sunI: 2.15, sunC: rgb('#FFD89A'),
+  hemiI: 0.78, hemiSky: rgb('#3A4540'), hemiGnd: rgb('#1A1E1C'),
+  fillI: 0.28, fillC: rgb('#2A3834'), envI: 0.38, exposure: 0.98,
+  shadow: 0.42, tint: [0.92, 0.96, 0.90], floorSun: 0.58, floorSunC: rgb('#C9A227'),
+  glassC: rgb('#1B5E4A'), glassA: 0.35, glassE: 0.18,
 });
-const MORNING = P({                                       // fresh: near-white floor, cool shade, pale sky in the glass
-  night: 0, bake: 0, lamps: 0, windows: 0.05,
-  sunI: 2.6, sunC: rgb('#FFEFD9'),
-  hemiI: 1.0, hemiSky: rgb('#E1EAFF'), hemiGnd: rgb('#C6CAD2'),
-  fillI: 0.38, fillC: rgb('#DCE6FF'), envI: 0.5, exposure: 1.07,
-  shadow: 0.36, tint: [2.05, 2.15, 2.35], floorSun: 0.72, floorSunC: rgb('#FFEEDA'),
-  glassC: rgb('#A6CCF2'), glassA: 0.82, glassE: 0.5,
+const MORNING = P({                                       // cool graphite morning, pale gold sun
+  night: 0, bake: 0, lamps: 0.1, windows: 0.08,
+  sunI: 2.3, sunC: rgb('#FFE2B0'),
+  hemiI: 0.82, hemiSky: rgb('#2E3A44'), hemiGnd: rgb('#1A1C20'),
+  fillI: 0.3, fillC: rgb('#243038'), envI: 0.4, exposure: 1.0,
+  shadow: 0.4, tint: [1.05, 1.12, 1.22], floorSun: 0.55, floorSunC: rgb('#E8C878'),
+  glassC: rgb('#3D6B5E'), glassA: 0.55, glassE: 0.35,
 });
 const GOLDEN = P({                                        // sunset: warm amber room, glowing glass, long golden light
   night: 0, bake: 0, lamps: 0.15, windows: 0.15,
@@ -62,13 +63,13 @@ const DUSK = P({                                          // after sunset: lamps
   shadow: 0.32, tint: [1.3, 1.02, 0.84], floorSun: 0, floorSunC: rgb('#FFD27E'),
   glassC: rgb('#4A5487'), glassA: 0.8, glassE: 0.5,
 });
-const NIGHT = P({                                         // dim warm room, lamp pools on the desks, deep navy glass
+const NIGHT = P({                                         // dim warm room, gold lamp pools, deep green glass
   night: 1, bake: 0.6, lamps: 1, windows: 1,
-  sunI: 0.2, sunC: rgb('#8CA6FF'),
-  hemiI: 0.4, hemiSky: rgb('#6A6158'), hemiGnd: rgb('#2A2420'),
-  fillI: 0.15, fillC: rgb('#8C8098'), envI: 0.2, exposure: 1.0,
-  shadow: 0.4, tint: [0.95, 0.8, 0.62], floorSun: 0, floorSunC: rgb('#FFEBD2'),
-  glassC: rgb('#1A2A66'), glassA: 0.92, glassE: 0.5,
+  sunI: 0.18, sunC: rgb('#8CA6FF'),
+  hemiI: 0.38, hemiSky: rgb('#3A3832'), hemiGnd: rgb('#141210'),
+  fillI: 0.14, fillC: rgb('#4A4038'), envI: 0.18, exposure: 0.98,
+  shadow: 0.45, tint: [0.78, 0.68, 0.52], floorSun: 0, floorSunC: rgb('#C9A227'),
+  glassC: rgb('#0D2A22'), glassA: 0.94, glassE: 0.45,
 });
 
 function mixParams(a, b, t) {

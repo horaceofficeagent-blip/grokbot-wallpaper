@@ -11,40 +11,75 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-// Wool-and-ceramic colours (sRGB): sage, eucalyptus, slate, lilac, mauve, clay, ochre.
-export const ACCENTS = ['#3D6B5E', '#A97A33', '#6B8F7A', '#C4A574', '#5A7A72', '#8B7355', '#9CAA93']; // AD-Linkage green/gold family
+// AD-Linkage HQ accents — black / gold / green family (deep green, gold, dark muted companions).
+export const ACCENTS = ['#1B5E4A', '#C9A227', '#123F36', '#A97A33', '#2A4A40', '#8B7355', '#3D6B5E'];
 export const LAYOUTS = ['sofa', 'media', 'library', 'meeting'];
+
+// Per-department décor for AD-Linkage floors (Marketing, Ops, Students, Finance, Video, Product, Courses).
+const DEPT_STYLE = {
+  marketing: { accent: '#1B5E4A', layout: 'media' },       // vivid green-gold media bay
+  video:     { accent: '#123F36', layout: 'media' },       // deeper green screening corner
+  product:   { accent: '#2A6B5E', layout: 'library' },     // teal-green library
+  courses:   { accent: '#C9A227', layout: 'meeting' },     // gold meeting table
+  students:  { accent: '#3D6B5E', layout: 'sofa' },        // softer green lounge
+  finance:   { accent: '#A97A33', layout: 'library' },     // muted gold / graphite library
+  ops:       { accent: '#1A2E28', layout: 'meeting' },     // charcoal-green meeting
+};
 
 const SUN = [0.85, 1.25];                 // floor offset of a shadow per metre of height, read off the baked floor
 const SHADOW_RGB = '26,30,42';             // cool near-black, like the studio shadow
 const PLUME_A = 0.3;                       // a baked sweep shadow darkens the floor by about 30 %
-const FLOOR_RGB = [240, 235, 227];         // the baked floor around the lounge
+const FLOOR_RGB = [72, 76, 70];            // muted graphite patch under lounge (AD-Linkage HQ, not ivory loft)
 const ZONE = { x0: 3.03, x1: 8.0, z0: -0.12, z1: 4.7 };   // clean patch over the GLB lounge's baked shadows
 const DROPS = [[4.13, -0.3], [4.13, 3.9]]; // baked shadows of two desk pendants, partly inside the patch
 const PPM = 128, SPPM = 64;                // px per metre: patch and rug textures, shadow layers
 const RUG_H = 0.012;
 const GLB_LOUNGE = ['sofa', 'armchair_1', 'armchair_2', 'coffee_table'];
-const FALLBACK = { oak: '#D9C39F', black: '#1C1C1E', graphite: '#3A3A3C', fabric_warm: '#C9C5BE', fabric_light: '#E2DFDA', pot_white: '#F1EFEB', bar_white: '#EBE9E4' };
+const FALLBACK = { oak: '#8B7355', black: '#0E0E10', graphite: '#2A2A2C', fabric_warm: '#4A4540', fabric_light: '#3A3A38', pot_white: '#2C2C2A', bar_white: '#1E1E1C' };
 const BOOKS = ['#ECE6DA', '#D3CABA', '#ABA294', '#6B6762', '#36363A', '#BCA680'];
 const WHITE = new THREE.Color(1, 1, 1);
-const WOOL = new THREE.Color('#F2EEE6');
+const WOOL = new THREE.Color('#2A2A28');   // dark wool blend for accent rugs on graphite floors
 const RUG_LIN = new THREE.Color().setRGB(210 / 255, 210 / 255, 210 / 255, THREE.SRGBColorSpace).r;   // the baked round rug
 const NIGHT = new Map();                   // corner name -> { layers, rug } for its night textures
 const NIGHT_SHADOW = 0.4;                  // the lamps' shadows are much softer than the sun's
 
 // ---------------- which floor gets what ----------------
 
-/** floors sorted by order -> Map(id -> { accent, layout }). The accent comes from the id; a colour an earlier floor
- *  already took moves on to the next free one, so up to seven floors never share one. */
+/** floors sorted by order -> Map(id -> { accent, layout, dept? }).
+ *  Known AD-Linkage department names (Marketing / Ops / Students / Finance / Video / Product / Courses)
+ *  map to a fixed décor; unknown floors still hash-rotate accent + layout so they stay distinct. */
 export function floorStyles(floors) {
   const used = new Set(), out = new Map();
   floors.forEach((f, i) => {
+    const dept = matchDept(f);
+    if (dept) {
+      const st = DEPT_STYLE[dept];
+      out.set(f.id, { accent: st.accent, layout: st.layout, dept });
+      used.add(ACCENTS.indexOf(st.accent) >= 0 ? ACCENTS.indexOf(st.accent) : -1);
+      return;
+    }
     let k = hash(f.id) % ACCENTS.length;
     if (floors.length <= ACCENTS.length) while (used.has(k)) k = (k + 1) % ACCENTS.length;
     used.add(k);
     out.set(f.id, { accent: ACCENTS[k], layout: LAYOUTS[i % LAYOUTS.length] });
   });
   return out;
+}
+
+function matchDept(f) {
+  const key = `${f?.name || ''} ${f?.id || ''}`.toLowerCase();
+  for (const name of Object.keys(DEPT_STYLE)) {
+    if (key.includes(name)) return name;
+  }
+  return null;
+}
+
+/** Accent colour for a floor (UI chips); falls back to hash rotation when styles not yet applied. */
+export function floorAccent(f, styles) {
+  if (styles && styles.has(f.id)) return styles.get(f.id).accent;
+  const dept = matchDept(f);
+  if (dept) return DEPT_STYLE[dept].accent;
+  return ACCENTS[hash(f.id) % ACCENTS.length];
 }
 
 function hash(s) {
@@ -458,11 +493,11 @@ function rugTexture(spec, bb, layers, light = null) {
 
 // Near-white wool with a faint weave and a fine bound line 18 cm in from the edge (the accent comes from the material).
 function paintRug(g, W, H, spec, bb, layers, shadowK) {
-  g.fillStyle = 'rgb(247,247,246)';
+  g.fillStyle = 'rgb(42,44,40)';           // dark wool base (AD-Linkage HQ)
   g.fillRect(0, 0, W, H);
   grain(g, W, H, 7, 5);
   const inset = 0.18 * PPM;
-  g.strokeStyle = 'rgba(0,0,0,0.07)';
+  g.strokeStyle = 'rgba(201,162,39,0.22)'; // faint gold bound line
   g.lineWidth = 1.5;
   g.beginPath();
   if (spec.kind === 'round') g.arc(W / 2, H / 2, W / 2 - inset, 0, Math.PI * 2);

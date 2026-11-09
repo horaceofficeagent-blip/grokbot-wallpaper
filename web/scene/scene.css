@@ -1,9 +1,9 @@
 /* Scene-owned styles: canvas, loading text and the quiet in-scene tags (CONTRACT v2.3 / v2.5). */
 
-.hq-scene { position: relative; overflow: hidden; background-color: #F6F2E8; /* AD-Linkage ivory */ cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.hq-scene { position: relative; overflow: hidden; background-color: #0A0C0A; /* AD-Linkage HQ charcoal */ cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 .hq-scene:active { cursor: grabbing; }
 .hq-scene.is-hovering { cursor: pointer; }
-/* The backdrop (white studio + the building's shadow aura) is drawn by the post pass (studio.js); the container only
+/* The backdrop (dark studio + gold aura) is drawn by the post pass (studio.js); the container only
    holds the same colour for the first moments. */
 .hq-scene canvas.hq-canvas { position: relative; z-index: 1; display: block; width: 100%; height: 100%; }
 .hq-labels { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
@@ -13,7 +13,7 @@
 .hq-loading {
   position: absolute; z-index: 4; left: 50%; top: 50%; transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 12px;
-  font: 500 13px/1 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em; color: #6E6E73;
+  font: 500 13px/1 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .01em; color: #A1A1A6;
   pointer-events: none; transition: opacity .35s ease;
 }
 .hq-loading > * { animation: hq-loading-in .5s .2s ease-out both; }
