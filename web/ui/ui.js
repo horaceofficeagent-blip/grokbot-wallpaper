@@ -458,6 +458,7 @@ export function initUI(handlers) {
   if (panel) buildPanel(panel); else console.warn('[ui] #panel not found');
   buildFeed(feed);
   buildZoom();
+  buildCommandBar();
   buildDock(floors, feed);
   buildSheet(feed);
   watchPhone();
@@ -485,7 +486,7 @@ function buildTopbar(root) {
   const clock = h('span', { class: 'bhq-num bhq-clock', text: '--:--' });
   const brand = h('div', { class: 'bhq-brand bhq-surface' },
     h('img', { class: 'bhq-mark', src: MARK_SRC, alt: '', draggable: 'false' }),
-    h('b', { class: 'bhq-word', text: 'Grok Bot Dashboard' }),
+    h('b', { class: 'bhq-word', text: 'AD-Linkage HQ' }),
     h('span', { class: 'bhq-sep', 'aria-hidden': 'true' }),
     h('span', { class: 'bhq-live' }, h('i', { class: 'bhq-dot bhq-live-dot', 'aria-hidden': 'true' }), 'Live · ', clock));
 
@@ -664,6 +665,74 @@ function buildZoom() {
   document.body.append(root);
   U.zoom = { root };
 }
+
+
+/* ------------------------------------------------------------------ build: command bar (copy + open bot chat) */
+
+function buildCommandBar() {
+  const sel = h('select', { class: 'bhq-cmd-bot', 'aria-label': 'Target bot' });
+  const input = h('input', {
+    class: 'bhq-cmd-input', type: 'text', maxlength: '240',
+    placeholder: 'Type an order for the selected bot…', 'aria-label': 'Command',
+    autocomplete: 'off',
+  });
+  const note = h('span', { class: 'bhq-cmd-note', role: 'status' });
+  const send = h('button', { class: 'bhq-cmd-send', type: 'button', text: 'Copy & open chat', title: 'Copies the text and opens that bot’s chat' });
+  const chipStatus = h('button', { class: 'bhq-cmd-chip', type: 'button', text: 'status check' });
+  const chipPause = h('button', { class: 'bhq-cmd-chip', type: 'button', text: 'pause routine …' });
+  const chips = h('div', { class: 'bhq-cmd-chips' }, chipStatus, chipPause);
+  const root = own(h('div', { class: 'bhq-cmd bhq-surface', role: 'region', 'aria-label': 'Command bar' },
+    h('div', { class: 'bhq-cmd-row' }, sel, input, send),
+    chips,
+    note));
+  document.body.append(root);
+
+  const fillBots = (state) => {
+    const bots = state && state.bots ? Object.values(state.bots) : [];
+    const withChat = bots.filter((b) => b && b.chat_url).sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id)));
+    const prev = sel.value;
+    sel.textContent = '';
+    const opt0 = h('option', { value: '', text: 'Selected bot / pick one' });
+    sel.append(opt0);
+    for (const b of withChat) {
+      sel.append(h('option', { value: b.id, text: b.name || b.id }));
+    }
+    if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+    else if (U.last.opts && U.last.opts.selectedBot && [...sel.options].some((o) => o.value === U.last.opts.selectedBot)) {
+      sel.value = U.last.opts.selectedBot;
+    }
+  };
+
+  const resolveTarget = () => {
+    const state = U.last.state;
+    if (!state || !state.bots) return null;
+    const id = sel.value || (U.last.opts && U.last.opts.selectedBot) || '';
+    const bot = id && state.bots[id];
+    if (bot && bot.chat_url) return bot;
+    // first with chat
+    return Object.values(state.bots).find((b) => b && b.chat_url) || null;
+  };
+
+  const run = async () => {
+    const text = (input.value || '').trim();
+    if (!text) { setText(note, 'Type a command first'); return; }
+    const bot = resolveTarget();
+    if (!bot || !bot.chat_url) { setText(note, 'Pick a bot that has a chat link'); return; }
+    const ok = await copyText(text);
+    setText(note, ok ? 'Copied — paste in ' + (bot.name || bot.id) + ' chat' : 'Could not copy — open chat and paste manually');
+    openChat(bot.id, bot.chat_url);
+  };
+
+  send.addEventListener('click', () => { run(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); run(); }
+  });
+  chipStatus.addEventListener('click', () => { input.value = 'status check, reply with one short line'; input.focus(); });
+  chipPause.addEventListener('click', () => { input.value = 'pause routine '; input.focus(); });
+
+  U.cmd = { root, sel, input, note, fillBots };
+}
+
 
 /* ------------------------------------------------------------------ build: dock (waiting on me / finished / routines) */
 
@@ -1095,6 +1164,7 @@ export function renderUI(state, opts) {
   safe('floors', () => U.fl && renderFloors(state, o));
   safe('panel', () => U.panel && renderPanel(state, o));
   safe('feed', () => U.feed && renderFeed(state));
+  safe('cmd', () => U.cmd && U.cmd.fillBots(state));
   safe('dock', () => U.dock && renderDock(state));
   safe('zoom', () => {
     if (U.zoom && !U.zoom.root.isConnected) document.body.append(U.zoom.root);

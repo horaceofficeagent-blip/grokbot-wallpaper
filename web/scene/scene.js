@@ -451,7 +451,7 @@ function setHover(id) {
 
 // ---------- effects ----------
 
-const CONFETTI_COLORS = [0x34C759, 0x0A84FF, 0xFF9F0A, 0xFF4FA0, 0xFF6A13, 0x14B8A6];
+const CONFETTI_COLORS = [0x123F36, 0xA97A33, 0xF6F2E8, 0x34C759, 0x0A84FF, 0xFF9F0A];
 const confettiGeo = new THREE.PlaneGeometry(0.07, 0.035);
 
 function confetti(at) {

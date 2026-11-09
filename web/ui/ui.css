@@ -812,3 +812,76 @@ html.bhq-phone body { overscroll-behavior: none; -webkit-tap-highlight-color: tr
 @media (prefers-reduced-transparency: reduce) {
   .bhq-phone .bhq-sheet { -webkit-backdrop-filter: none; backdrop-filter: none; background: #1A1A1E; }
 }
+
+
+/* Command bar — bottom center glass */
+.bhq-cmd {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: min(720px, calc(100vw - 48px));
+  padding: 10px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+  border-radius: 16px;
+}
+.bhq-cmd-row { display: flex; gap: 8px; align-items: center; }
+.bhq-cmd-bot {
+  max-width: 180px;
+  flex: 0 1 180px;
+  height: 34px;
+  border-radius: 10px;
+  border: 0;
+  padding: 0 10px;
+  background: rgba(0,0,0,.06);
+  color: inherit;
+  font: inherit;
+}
+.bhq-cmd-input {
+  flex: 1 1 auto;
+  height: 34px;
+  border-radius: 10px;
+  border: 0;
+  padding: 0 12px;
+  background: rgba(0,0,0,.06);
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.bhq-cmd-input:focus { box-shadow: inset 0 0 0 1.5px rgba(18,63,54,.45); }
+.bhq-cmd-send {
+  height: 34px;
+  border-radius: 10px;
+  border: 0;
+  padding: 0 12px;
+  background: #123F36;
+  color: #F6F2E8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bhq-cmd-send:hover { filter: brightness(1.08); }
+.bhq-cmd-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.bhq-cmd-chip {
+  height: 24px;
+  border-radius: 999px;
+  border: 0;
+  padding: 0 10px;
+  background: rgba(169,122,51,.16);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.bhq-cmd-note { font-size: 12px; opacity: .72; min-height: 1em; }
+html[data-daylight="night"] .bhq-cmd-bot,
+html[data-daylight="night"] .bhq-cmd-input { background: rgba(255,255,255,.08); }
+html[data-daylight="night"] .bhq-cmd-send { background: #A97A33; color: #1D1D1F; }
+.bhq-phone .bhq-cmd { bottom: 10px; width: calc(100vw - 20px); }
+.bhq-phone .bhq-cmd-bot { max-width: 120px; }
+.bhq-phone .bhq-cmd-send { padding: 0 8px; font-size: 12px; }
